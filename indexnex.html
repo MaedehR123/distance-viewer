@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محاسبه فاصله بین شهرهای ایران | نقشه آنلاین مسافت سنج | فاصله شهرها</title>
+    <meta name="description" content="محاسبه دقیق فاصله بین شهرهای ایران و زمان سفر بین مبدا و مقصد با دقت بالا. ابزار آنلاین نقشه‌یابی برای مسیریابی و محاسبه مسافت بین نقاط مختلف کشور">
+    <meta name="keywords" content="محاسبه فاصله, فاصله شهرهای ایران, نقشه مسافت سنج, مسافت بین شهرها, مسیریابی ایران, نقشه آنلاین ایران, فاصله مبدا تا مقصد">
+    <meta name="author" content="ابزارهای آنلاین">
+    <link rel="canonical" href="https://example.com/map-distance-calculator" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://example.com/map-distance-calculator">
+    <meta property="og:title" content="محاسبه فاصله بین شهرهای ایران | نقشه آنلاین مسافت سنج">
+    <meta property="og:description" content="محاسبه دقیق فاصله بین شهرهای ایران و زمان سفر بین مبدا و مقصد با دقت بالا">
+    <meta property="og:image" content="https://example.com/images/map-distance-preview.jpg">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://example.com/map-distance-calculator">
+    <meta property="twitter:title" content="محاسبه فاصله بین شهرهای ایران | نقشه آنلاین مسافت سنج">
+    <meta property="twitter:description" content="محاسبه دقیق فاصله بین شهرهای ایران و زمان سفر بین مبدا و مقصد با دقت بالا">
+    <meta property="twitter:image" content="https://example.com/images/map-distance-preview.jpg">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        #map { 
+            height: 75vh;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+        
+        #map:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .marker-number {
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            line-height: 24px;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+        }
+        
+        .distance-line {
+            stroke: #3b82f6;
+            stroke-width: 4;
+            stroke-dasharray: 10, 5;
+            animation: dash 30s linear infinite;
+        }
+        
+        @keyframes dash {
+            to {
+                stroke-dashoffset: 1000;
+            }
+        }
+        
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid #d4d4d4;
+            border-radius: 0.375rem;
+            z-index: 99;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .autocomplete-items div {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border-bottom: 1px solid #f3f4f6;
+            transition: all 0.2s ease;
+        }
+        
+        .autocomplete-items div:hover {
+            background-color: #f3f4f6;
+            transform: translateX(-5px);
+        }
+        
+        .autocomplete-active {
+            background-color: #3b82f6 !important;
+            color: #ffffff;
+        }
+        
+        .point-item {
+            transition: all 0.3s ease;
+            transform-origin: left center;
+        }
+        
+        .point-item:hover {
+            transform: scale(1.02);
+            background-color: #f9fafb;
+        }
+        
+        .delete-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .delete-btn:hover {
+            transform: scale(1.2);
+        }
+        
+        .btn-primary {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3), 0 2px 4px -1px rgba(59, 130, 246, 0.1);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3), 0 4px 6px -2px rgba(59, 130, 246, 0.1);
+        }
+        
+        .btn-secondary {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+        }
+        
+        .toast {
+            animation: slideIn 0.5s forwards, fadeOut 0.5s 2.5s forwards;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        
+        .tooltip {
+            position: relative;
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .tooltip-text {
+            visibility: hidden;
+            width: 120px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+        
+        @media (max-width: 768px) {
+            #map { 
+                height: 60vh;
+                border-radius: 0;
+            }
+            
+            .sidebar {
+                max-height: 35vh;
+                overflow-y: auto;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-blue-50 to-indigo-50 font-sans min-h-screen">
+    <!-- Schema.org markup for Google -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "محاسبه فاصله بین شهرهای ایران",
+      "description": "ابزار آنلاین محاسبه فاصله و مسافت بین شهرهای مختلف ایران با دقت بالا",
+      "url": "https://example.com/map-distance-calculator",
+      "applicationCategory": "MapApplication",
+      "operatingSystem": "Web Browser"
+    }
+    </script>
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+                    <span class="text-blue-600">نقشه</span> مسافت‌سنج ایران
+                </h1>
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <a href="#" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <i class="fas fa-question-circle text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <i class="fas fa-share-alt text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            <p class="text-gray-600 mt-2 text-sm md:text-base">محاسبه دقیق فاصله و زمان سفر بین شهرهای ایران</p>
+        </div>
+    </header>
+
+    <div id="toast" class="hidden fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center toast">
+        <i class="fas fa-check-circle ml-2"></i>
+        <span>نقطه با موفقیت اضافه شد!</span>
+    </div>
+
+    <main class="container mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <!-- Map - Takes 3 columns on large screens -->
+            <div class="lg:col-span-3 bg-white rounded-lg shadow-lg overflow-hidden relative order-1 lg:order-2">
+                <div id="map" class="z-10"></div>
+                <div class="absolute top-4 left-4 z-10 bg-white p-2 rounded-lg shadow-md">
+                    <button id="toggleLines" class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded-md text-sm flex items-center">
+                        <i class="fas fa-ruler-combined ml-1"></i>
+                        <span>نمایش/پنهان خطوط</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Sidebar - Takes 2 columns on large screens -->
+            <div class="lg:col-span-2 bg-white rounded-lg shadow-lg p-4 sidebar order-2 lg:order-1">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2 flex items-center">
+                    <i class="fas fa-map-marked-alt ml-2 text-blue-600"></i>
+                    ابزارهای نقشه
+                </h2>
+                
+                <!-- Origin/Destination Section -->
+                <div class="mb-6 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <h3 class="text-lg font-medium text-blue-800 mb-3 flex items-center">
+                        <i class="fas fa-route ml-2"></i>
+                        مسافت مبدا به مقصد
+                    </h3>
+                    
+                    <div class="mb-3">
+                        <label class="block text-gray-700 mb-1 text-sm font-medium">مبدا:</label>
+                        <div class="relative">
+                            <input type="text" id="originSearch" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" placeholder="شهر مبدا">
+                            <div id="originAutocomplete" class="autocomplete-items hidden"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="block text-gray-700 mb-1 text-sm font-medium">مقصد:</label>
+                        <div class="relative">
+                            <input type="text" id="destinationSearch" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" placeholder="شهر مقصد">
+                            <div id="destinationAutocomplete" class="autocomplete-items hidden"></div>
+                        </div>
+                    </div>
+                    
+                    <button id="calculateDistance" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg btn-primary flex items-center justify-center">
+                        <i class="fas fa-calculator ml-2"></i>
+                        محاسبه مسافت
+                    </button>
+                    
+                    <div id="originDestinationResults" class="mt-3 bg-green-50 p-3 rounded-lg border border-green-100 hidden">
+                        <h4 class="font-medium text-green-800 mb-2">نتایج محاسبه:</h4>
+                        <div id="odCalculations" class="text-gray-700 space-y-1"></div>
+                    </div>
+                </div>
+                
+                <!-- City Search Section -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-search-location ml-2 text-blue-600"></i>
+                        جستجوی شهر
+                    </h3>
+                    
+                    <div class="mb-2">
+                        <div class="relative">
+                            <input type="text" id="citySearch" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" placeholder="نام شهر را جستجو کنید...">
+                            <div id="autocompleteResults" class="autocomplete-items hidden"></div>
+                        </div>
+                    </div>
+                    
+                    <button id="cityConfirm" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg btn-primary flex items-center justify-center">
+                        <i class="fas fa-map-marker-alt ml-2"></i>
+                        اضافه کردن به نقشه
+                    </button>
+                </div>
+                
+                <!-- Selected Points Section -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-lg font-medium text-gray-800 flex items-center">
+                            <i class="fas fa-location-dot ml-2 text-blue-600"></i>
+                            نقاط انتخاب شده
+                        </h3>
+                        <span id="pointsCount" class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">0</span>
+                    </div>
+                    
+                    <div id="pointsList" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+                    
+                    <!-- <p class="text-xs text-gray-500 mt-2">
+                        <i class="fas fa-info-circle ml-1"></i>
+                        برای محاسبه مسافت چند نقطه، روی نقشه کلیک کنید یا شهرها را جستجو کنید.
+                    </p> -->
+                </div>
+                
+                <!-- Calculations Section -->
+                <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 mb-4">
+                    <h3 class="font-medium text-blue-800 mb-2 flex items-center">
+                        <i class="fas fa-ruler ml-2"></i>
+                        نتایج محاسبات
+                    </h3>
+                    <div id="calculations" class="text-gray-700 space-y-2">
+                        <p class="text-sm text-gray-500">حداقل دو نقطه برای محاسبه فاصله انتخاب کنید.</p>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex space-x-2 space-x-reverse">
+                    <button id="clearAll" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex-1 btn-secondary flex items-center justify-center">
+                        <i class="fas fa-trash-alt ml-2"></i>
+                        پاک کردن همه
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white py-6 mt-8 border-t">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h3 class="text-lg font-semibold text-gray-800">ابزارهای آنلاین</h3>
+                    <p class="text-gray-600 text-sm mt-1">ارائه دهنده بهترین ابزارهای کاربردی اینترنتی</p>
+                </div>
+                
+                <div class="flex space-x-6 space-x-reverse">
+                    <a href="https://t.me/siteup_web" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <i class="fab fa-telegram text-xl"></i>
+                    </a>
+                    <a href="https://www.instagram.com/siteup_web/profilecard" target="_blank" class="text-gray-600 hover:text-pink-600 transition-colors">
+                        <i class="fab fa-instagram text-xl"></i>
+                    </a>
+                    <a href="https://www.linkedin.com/in/maedeh-rezaei-079570329?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app" target="_blank" class="text-gray-600 hover:text-blue-700 transition-colors">
+                        <i class="fab fa-linkedin text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="mt-6 pt-6 border-t border-gray-100 text-center text-gray-500 text-sm">
+                <p>© 2023 تمام حقوق برای ابزارهای آنلاین محفوظ است.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Enhanced list of Iranian cities with coordinates and provinces
+        const iranCities = [
+            {name: "تهران", lat: 35.6892, lng: 51.3890, province: "تهران"},
+            {name: "مشهد", lat: 36.2605, lng: 59.6168, province: "خراسان رضوی"},
+            {name: "اصفهان", lat: 32.6539, lng: 51.6660, province: "اصفهان"},
+            {name: "کرج", lat: 35.8400, lng: 50.9391, province: "البرز"},
+            {name: "تبریز", lat: 38.0962, lng: 46.2738, province: "آذربایجان شرقی"},
+            {name: "شیراز", lat: 29.5926, lng: 52.5836, province: "فارس"},
+            {name: "اهواز", lat: 31.3183, lng: 48.6706, province: "خوزستان"},
+            {name: "قم", lat: 34.6399, lng: 50.8759, province: "قم"},
+            {name: "کرمانشاه", lat: 34.3142, lng: 47.0650, province: "کرمانشاه"},
+            {name: "ارومیه", lat: 37.5527, lng: 45.0759, province: "آذربایجان غربی"},
+            {name: "رشت", lat: 37.2808, lng: 49.5832, province: "گیلان"},
+            {name: "زاهدان", lat: 29.4965, lng: 60.8629, province: "سیستان و بلوچستان"},
+            {name: "همدان", lat: 34.7983, lng: 48.5148, province: "همدان"},
+            {name: "کرمان", lat: 30.2839, lng: 57.0834, province: "کرمان"},
+            {name: "اردبیل", lat: 38.2512, lng: 48.2961, province: "اردبیل"},
+            {name: "بندرعباس", lat: 27.1836, lng: 56.2666, province: "هرمزگان"},
+            {name: "اراک", lat: 34.0956, lng: 49.6981, province: "مرکزی"},
+            {name: "یزد", lat: 31.8974, lng: 54.3569, province: "یزد"},
+            {name: "قزوین", lat: 36.2797, lng: 50.0049, province: "قزوین"},
+            {name: "گرگان", lat: 36.8456, lng: 54.4393, province: "گلستان"},
+            {name: "ساری", lat: 36.5633, lng: 53.0601, province: "مازندران"},
+            {name: "بوشهر", lat: 28.9234, lng: 50.8203, province: "بوشهر"},
+            {name: "بیرجند", lat: 32.8649, lng: 59.2262, province: "خراسان جنوبی"},
+            {name: "اسلامشهر", lat: 35.5446, lng: 51.2302, province: "تهران"},
+            {name: "نجف آباد", lat: 32.6346, lng: 51.3673, province: "اصفهان"},
+            {name: "دزفول", lat: 32.3831, lng: 48.4236, province: "خوزستان"},
+            {name: "کاشان", lat: 33.9850, lng: 51.4100, province: "اصفهان"},
+            {name: "خرم آباد", lat: 33.4878, lng: 48.3558, province: "لرستان"},
+            {name: "گلستان", lat: 35.7734, lng: 51.4780, province: "تهران"},
+            {name: "سبزوار", lat: 36.2156, lng: 57.6678, province: "خراسان رضوی"},
+            {name: "ملارد", lat: 35.6659, lng: 50.9767, province: "تهران"},
+            {name: "قائم شهر", lat: 36.4639, lng: 52.8600, province: "مازندران"},
+            {name: "پاکدشت", lat: 35.4669, lng: 51.6860, province: "تهران"},
+            {name: "آبادان", lat: 30.3473, lng: 48.2934, province: "خوزستان"},
+            {name: "ورامین", lat: 35.3252, lng: 51.6472, province: "تهران"},
+            {name: "بابل", lat: 36.5440, lng: 52.6788, province: "مازندران"},
+            {name: "سنندج", lat: 35.3098, lng: 46.9989, province: "کردستان"},
+            {name: "شهریار", lat: 35.6597, lng: 51.0590, province: "تهران"},
+            {name: "مرودشت", lat: 29.8742, lng: 52.8025, province: "فارس"},
+            {name: "مسجدسلیمان", lat: 31.9364, lng: 49.3039, province: "خوزستان"},
+            {name: "بهبهان", lat: 30.5959, lng: 50.2415, province: "خوزستان"},
+            {name: "قرچک", lat: 35.4376, lng: 51.5683, province: "تهران"},
+            {name: "نیشابور", lat: 36.2141, lng: 58.7961, province: "خراسان رضوی"},
+            {name: "شاهرود", lat: 36.4181, lng: 54.9764, province: "سمنان"},
+            {name: "دامغان", lat: 36.1683, lng: 54.3480, province: "سمنان"},
+            {name: "رفسنجان", lat: 30.4067, lng: 55.9939, province: "کرمان"},
+            {name: "ماهشهر", lat: 30.5588, lng: 49.1981, province: "خوزستان"},
+            {name: "اندیمشک", lat: 32.4600, lng: 48.3593, province: "خوزستان"},
+            {name: "ساوه", lat: 35.0218, lng: 50.3567, province: "مرکزی"},
+            {name: "مراغه", lat: 37.3891, lng: 46.2375, province: "آذربایجان شرقی"},
+            {name: "بجنورد", lat: 37.4750, lng: 57.3293, province: "خراسان شمالی"},
+            {name: "شهرکرد", lat: 32.3256, lng: 50.8644, province: "چهارمحال و بختیاری"},
+            {name: "لنگرود", lat: 37.1969, lng: 50.1536, province: "گیلان"},
+            {name: "سیرجان", lat: 29.4517, lng: 55.6809, province: "کرمان"},
+            {name: "ایلام", lat: 33.6374, lng: 46.4227, province: "ایلام"},
+            {name: "بانه", lat: 35.9975, lng: 45.8853, province: "کردستان"},
+            {name: "سمنان", lat: 35.5726, lng: 53.3972, province: "سمنان"},
+            {name: "فردوس", lat: 34.0186, lng: 58.1722, province: "خراسان جنوبی"},
+            {name: "داراب", lat: 28.7519, lng: 54.5444, province: "فارس"},
+            {name: "آق قلا", lat: 37.0141, lng: 54.4553, province: "گلستان"},
+            {name: "مهاباد", lat: 36.7631, lng: 45.7222, province: "آذربایجان غربی"},
+            {name: "میانه", lat: 37.4211, lng: 47.7150, province: "آذربایجان شرقی"},
+            {name: "پارس آباد", lat: 39.6486, lng: 47.9174, province: "اردبیل"},
+            {name: "فومن", lat: 37.2239, lng: 49.3125, province: "گیلان"},
+            {name: "رودسر", lat: 37.1378, lng: 50.2881, province: "گیلان"},
+            {name: "سراب", lat: 37.9408, lng: 47.5367, province: "آذربایجان شرقی"},
+            {name: "مریوان", lat: 35.5269, lng: 46.1761, province: "کردستان"},
+            {name: "اسکو", lat: 37.9150, lng: 46.1196, province: "آذربایجان شرقی"},
+            {name: "کلاله", lat: 37.3807, lng: 55.4916, province: "گلستان"},
+            {name: "نور", lat: 36.5731, lng: 52.0153, province: "مازندران"},
+            {name: "تنکابن", lat: 36.8164, lng: 50.8738, province: "مازندران"},
+            {name: "فریدونکنار", lat: 36.6836, lng: 52.5189, province: "مازندران"},
+            {name: "چالوس", lat: 36.6549, lng: 51.4200, province: "مازندران"},
+            {name: "نکا", lat: 36.6508, lng: 53.2991, province: "مازندران"},
+            {name: "رامسر", lat: 36.9180, lng: 50.6488, province: "مازندران"},
+            {name: "آستارا", lat: 38.4291, lng: 48.8720, province: "گیلان"},
+            {name: "پل سفید", lat: 35.7747, lng: 53.3278, province: "مازندران"},
+            {name: "آشتیان", lat: 34.5219, lng: 49.9992, province: "مرکزی"},
+            {name: "تفرش", lat: 34.6917, lng: 50.0131, province: "مرکزی"},
+            {name: "خمین", lat: 33.6406, lng: 50.0771, province: "مرکزی"},
+            {name: "محلات", lat: 33.9086, lng: 50.4550, province: "مرکزی"},
+            {name: "دلیجان", lat: 33.9906, lng: 50.6839, province: "مرکزی"},
+            {name: "شازند", lat: 33.9275, lng: 49.4117, province: "مرکزی"},
+            {name: "خنداب", lat: 34.3833, lng: 49.1833, province: "مرکزی"},
+            {name: "زرندیه", lat: 35.3000, lng: 50.5000, province: "مرکزی"},
+            {name: "کمیجان", lat: 34.7083, lng: 49.3250, province: "مرکزی"},
+            {name: "فراهان", lat: 34.5111, lng: 49.6847, province: "مرکزی"},
+            {name: "شیروان و چرداول", lat: 33.7750, lng: 46.5972, province: "ایلام"},
+            {name: "چناران", lat: 36.6458, lng: 59.1211, province: "خراسان رضوی"},
+            {name: "درگز", lat: 37.4444, lng: 59.1081, province: "خراسان رضوی"},
+            {name: "قوچان", lat: 37.1061, lng: 58.5094, province: "خراسان رضوی"},
+            {name: "کلات", lat: 34.7833, lng: 60.5167, province: "خراسان رضوی"},
+            {name: "سرخس", lat: 36.5450, lng: 61.1578, province: "خراسان رضوی"},
+            {name: "فیروزه", lat: 36.2833, lng: 58.8833, province: "خراسان رضوی"},
+            {name: "باخرز", lat: 34.9917, lng: 60.3167, province: "خراسان رضوی"},
+            {name: "تایباد", lat: 34.7400, lng: 60.7756, province: "خراسان رضوی"},
+            {name: "تربت جام", lat: 35.2439, lng: 60.6225, province: "خراسان رضوی"},
+            {name: "تربت حیدریه", lat: 35.2739, lng: 59.2194, province: "خراسان رضوی"},
+            {name: "خواف", lat: 34.5764, lng: 60.1408, province: "خراسان رضوی"},
+            {name: "رشتخوار", lat: 34.9750, lng: 59.6236, province: "خراسان رضوی"},
+            {name: "سبزوار", lat: 36.2156, lng: 57.6678, province: "خراسان رضوی"},
+            {name: "فریمان", lat: 35.7069, lng: 59.8500, province: "خراسان رضوی"},
+            {name: "قوچان", lat: 37.1061, lng: 58.5094, province: "خراسان رضوی"},
+            {name: "کاشمر", lat: 35.2383, lng: 58.4656, province: "خراسان رضوی"},
+            {name: "گناباد", lat: 34.3528, lng: 58.6836, province: "خراسان رضوی"}
+        ];
+
+
+
+
+        // Initialize the map centered on Iran with more detailed tile layer
+        const map = L.map('map', {
+            zoomControl: false,
+            preferCanvas: true
+        }).setView([32.4279, 53.6880], 5.5);
+
+        // Add multiple tile layers for better user experience
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18
+        }).addTo(map);
+
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            maxZoom: 18
+        });
+
+        const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            maxZoom: 18
+        });
+
+        // Add layer control
+        const baseLayers = {
+            "نقشه استاندارد": osmLayer,
+            "نمایش ماهواره‌ای": satelliteLayer,
+            "نمایش تاریک": darkLayer
+        };
+
+        L.control.layers(baseLayers, null, {
+            position: 'bottomright'
+        }).addTo(map);
+
+        // Add zoom control with better position
+        L.control.zoom({
+            position: 'bottomright'
+        }).addTo(map);
+
+        // Variables to store map elements
+        let markers = [];
+        let polylines = [];
+        let originMarker = null;
+        let destinationMarker = null;
+        let originDestinationPolyline = null;
+        let showLines = true;
+
+        // Function to calculate distance between two points in kilometers (Haversine formula)
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // Function to calculate area of a polygon in square kilometers
+        function calculateArea(latlngs) {
+            if (latlngs.length < 3) return 0;
+            
+            const R = 6371; // Earth's radius in km
+            let total = 0;
+            
+            // Close the polygon if not already closed
+            if (latlngs[0].lat !== latlngs[latlngs.length-1].lat || 
+                latlngs[0].lng !== latlngs[latlngs.length-1].lng) {
+                latlngs.push(latlngs[0]);
+            }
+            
+            for (let i = 0; i < latlngs.length - 1; i++) {
+                const p1 = latlngs[i];
+                const p2 = latlngs[i+1];
+                
+                total += (p2.lng * Math.PI / 180 - p1.lng * Math.PI / 180) *
+                        (2 + Math.sin(p1.lat * Math.PI / 180) + 
+                         Math.sin(p2.lat * Math.PI / 180));
+            }
+            
+            return Math.abs(total * R * R / 2);
+        }
+
+        // Function to add a marker to the map with enhanced styling
+        function addMarker(lat, lng, title, isOriginDestination = false, isOrigin = false) {
+            const markerNumber = markers.length + 1;
+            
+            // Create a custom icon with number and animation
+            const icon = L.divIcon({
+                className: 'custom-marker pulse',
+                html: `<div style="background-color: ${isOriginDestination ? (isOrigin ? '#10b981' : '#ef4444') : '#3b82f6'}; 
+                                width: 28px; 
+                                height: 28px; 
+                                border-radius: 50%; 
+                                display: flex; 
+                                align-items: center; 
+                                justify-content: center;
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                                border: 2px solid white;">
+                        <span class="marker-number">${isOriginDestination ? (isOrigin ? 'مبدا' : 'مقصد') : markerNumber}</span>
+                      </div>`
+            });
+
+            const marker = L.marker([lat, lng], { 
+                title: title,
+                icon: icon,
+                draggable: isOriginDestination,
+                riseOnHover: true
+            }).addTo(map);
+
+            // Add tooltip with city name
+            marker.bindTooltip(title, {
+                permanent: false,
+                direction: 'top',
+                className: 'custom-tooltip'
+            });
+
+            if (!isOriginDestination) {
+                markers.push(marker);
+            }
+
+            // Show toast notification
+            showToast(`نقطه ${isOriginDestination ? (isOrigin ? 'مبدا' : 'مقصد') : markerNumber} اضافه شد: ${title}`);
+
+            return marker;
+        }
+
+        // Function to show toast notification
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.querySelector('span').textContent = message;
+            toast.classList.remove('hidden');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Function to update the points list and calculations
+        function updatePointsList() {
+            const pointsList = document.getElementById('pointsList');
+            const calculations = document.getElementById('calculations');
+            const pointsCount = document.getElementById('pointsCount');
+            
+            pointsList.innerHTML = '';
+            pointsCount.textContent = markers.length;
+            
+            if (markers.length === 0) {
+                calculations.innerHTML = '<p class="text-sm text-gray-500">حداقل دو نقطه برای محاسبه فاصله انتخاب کنید.</p>';
+                return;
+            }
+            
+            // Add points to the list with hover effects
+            let originCoords = null;
+let destinationCoords = null;
+
+            markers.forEach((marker, index) => {
+                const pointItem = document.createElement('div');
+                pointItem.className = 'flex justify-between items-center bg-gray-50 p-2 rounded-lg point-item border border-gray-100';
+                
+                const pointInfo = document.createElement('div');
+                pointInfo.className = 'flex items-center';
+                
+                const pointNumber = document.createElement('span');
+                pointNumber.className = 'bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2 py-0.5 rounded-full';
+                pointNumber.textContent = index + 1;
+                
+                const pointName = document.createElement('span');
+                pointName.className = 'text-gray-700 text-sm';
+                pointName.textContent = marker.options.title;
+                
+                pointInfo.appendChild(pointNumber);
+                pointInfo.appendChild(pointName);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'text-red-500 hover:text-red-700 delete-btn';
+                deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    map.removeLayer(marker);
+                    markers.splice(index, 1);
+                    
+                    // Remove all polylines and redraw
+                    polylines.forEach(line => map.removeLayer(line));
+                    polylines = [];
+                    
+                    // Redraw lines between remaining markers
+                    for (let i = 0; i < markers.length - 1; i++) {
+                        const line = L.polyline([
+                            [markers[i].getLatLng().lat, markers[i].getLatLng().lng],
+                            [markers[i+1].getLatLng().lat, markers[i+1].getLatLng().lng]
+                        ], {
+                            color: '#3b82f6', 
+                            weight: 4,
+                            dashArray: '10, 5',
+                            className: 'distance-line'
+                        }).addTo(map);
+                        polylines.push(line);
+                    }
+                    
+                    updatePointsList();
+                };
+                
+                pointItem.appendChild(pointInfo);
+                pointItem.appendChild(deleteBtn);
+                
+                // Add click event to focus on the marker
+                pointItem.addEventListener('click', () => {
+                    map.setView(marker.getLatLng(), 10);
+                    marker.openPopup();
+                });
+                
+                pointsList.appendChild(pointItem);
+            });
+            
+            // Calculate distances and total
+            if (markers.length >= 2) {
+                let totalDistance = 0;
+                let distancesHTML = '';
+                
+                for (let i = 0; i < markers.length - 1; i++) {
+                    const p1 = markers[i].getLatLng();
+                    const p2 = markers[i+1].getLatLng();
+                    const distance = calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng);
+                    totalDistance += distance;
+                    
+                    distancesHTML += `
+                        <div class="flex justify-between items-center py-1 border-b border-gray-200 last:border-0">
+                            <span class="text-gray-600 text-sm">فاصله نقطه ${i+1} به ${i+2}</span>
+                            <span class="font-medium text-blue-600">${distance.toFixed(2)} کیلومتر</span>
+                        </div>
+                    `;
+                }
+                
+                calculations.innerHTML = `
+                    <div class="mb-2">
+                        ${distancesHTML}
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-gray-200 font-medium">
+                        <span>مجموع مسافت:</span>
+                        <span class="text-blue-600">${totalDistance.toFixed(2)} کیلومتر</span>
+                    </div>
+                `;
+                
+                // Calculate area if more than 2 points
+                if (markers.length >= 3) {
+                    const latlngs = markers.map(marker => marker.getLatLng());
+                    const area = calculateArea(latlngs);
+                    
+                    calculations.innerHTML += `
+                        <div class="flex justify-between items-center pt-2 mt-2 border-t border-gray-200 font-medium">
+                            <span>مساحت محدوده:</span>
+                            <span class="text-blue-600">${area.toFixed(2)} کیلومتر مربع</span>
+                        </div>
+                    `;
+                }
+            } else {
+                calculations.innerHTML = '<p class="text-sm text-gray-500">حداقل دو نقطه برای محاسبه فاصله انتخاب کنید.</p>';
+            }
+        }
+
+        // Function to handle origin/destination search and display
+        function updateOriginDestination(manualTrigger = false) {
+            const originInput = document.getElementById('originSearch');
+            const destinationInput = document.getElementById('destinationSearch');
+            const odResults = document.getElementById('originDestinationResults');
+            const odCalculations = document.getElementById('odCalculations');
+            
+            const origin = originInput.value.trim();
+            const destination = destinationInput.value.trim();
+            
+            // Clear previous markers and polyline
+            if (originMarker) map.removeLayer(originMarker);
+            if (destinationMarker) map.removeLayer(destinationMarker);
+            if (originDestinationPolyline) map.removeLayer(originDestinationPolyline);
+            
+            originMarker = null;
+            destinationMarker = null;
+            originDestinationPolyline = null;
+            
+            // Only calculate if manually triggered or both fields are filled
+            if (!manualTrigger && (!origin || !destination)) {
+                odResults.classList.add('hidden');
+                return;
+            }
+            
+            // Show error if either field is empty when manually triggered
+            if (manualTrigger && (!origin || !destination)) {
+                odResults.classList.remove('hidden');
+                odCalculations.innerHTML = `
+                    <div class="bg-red-100 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
+                        لطفاً هم مبدا و هم مقصد را انتخاب کنید
+                    </div>
+                `;
+                return;
+            }
+            
+            // Find cities
+            const originCity = iranCities.find(city => city.name === origin);
+            const destinationCity = iranCities.find(city => city.name === destination);
+            
+            if (!originCity || !destinationCity) {
+                odResults.classList.add('hidden');
+                return;
+            }
+            
+            // Check if origin and destination are the same
+            if (origin === destination) {
+                odResults.classList.remove('hidden');
+                odCalculations.innerHTML = `
+                    <div class="bg-red-100 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
+                        مبدا و مقصد یکسان هستند!
+                    </div>
+                `;
+                return;
+            }
+            
+            // Add markers with different colors
+            originMarker = addMarker(originCity.lat, originCity.lng, originCity.name, true, true);
+            destinationMarker = addMarker(destinationCity.lat, destinationCity.lng, destinationCity.name, true, false);
+            
+            // Add polyline with animation
+            originDestinationPolyline = L.polyline([
+                [originCity.lat, originCity.lng],
+                [destinationCity.lat, destinationCity.lng]
+            ], {
+                color: '#10b981', 
+                weight: 4,
+                className: 'distance-line'
+            }).addTo(map);
+            
+            // Calculate distance and time
+            const distance = calculateDistance(originCity.lat, originCity.lng, destinationCity.lat, destinationCity.lng);
+            const timeHours = distance / 80; // Assuming 80 km/h average speed
+            const timeFormatted = timeHours >= 1 ? 
+                `${Math.floor(timeHours)} ساعت و ${Math.round((timeHours % 1) * 60)} دقیقه` : 
+                `${Math.round(timeHours * 60)} دقیقه`;
+            
+            // Display results in a nice format
+            odResults.classList.remove('hidden');
+            odCalculations.innerHTML = `
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">مسافت:</span>
+                        <span class="font-medium text-green-600">${distance.toFixed(2)} کیلومتر</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">زمان تقریبی:</span>
+                        <span class="font-medium text-green-600">${timeFormatted}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">مبدا:</span>
+                        <span class="font-medium">${originCity.name} (${originCity.province})</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">مقصد:</span>
+                        <span class="font-medium">${destinationCity.name} (${destinationCity.province})</span>
+                    </div>
+                </div>
+            `;
+            
+            // Fit map to show both markers
+            const bounds = L.latLngBounds([
+                [originCity.lat, originCity.lng],
+                [destinationCity.lat, destinationCity.lng]
+            ]);
+            map.fitBounds(bounds, {padding: [50, 50]});
+        }
+
+        // Enhanced autocomplete function with better UI
+        function setupAutocomplete(inputElement, resultsElement, isOriginDestination = false) {
+            inputElement.addEventListener('input', function() {
+                const input = this.value;
+                resultsElement.innerHTML = '';
+                
+                if (input.length < 2) {
+                    resultsElement.classList.add('hidden');
+                    return;
+                }
+                
+                const matches = iranCities.filter(city => 
+                    city.name.includes(input) || city.province.includes(input)
+                ).slice(0, 8);
+                
+                if (matches.length === 0) {
+                    resultsElement.classList.add('hidden');
+                    return;
+                }
+                
+                matches.forEach(city => {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center p-2 hover:bg-blue-50 transition-colors';
+                    
+                    const cityInfo = document.createElement('div');
+                    cityInfo.className = 'flex flex-col';
+                    
+                    const cityName = document.createElement('span');
+                    cityName.className = 'font-medium text-gray-800';
+                    cityName.textContent = city.name;
+                    
+                    const cityProvince = document.createElement('span');
+                    cityProvince.className = 'text-xs text-gray-500';
+                    cityProvince.textContent = city.province;
+                    
+                    cityInfo.appendChild(cityName);
+                    cityInfo.appendChild(cityProvince);
+                    
+                    const distanceIcon = document.createElement('i');
+                    distanceIcon.className = 'fas fa-location-arrow text-blue-500 ml-2';
+                    
+                    item.appendChild(cityInfo);
+                    item.appendChild(distanceIcon);
+                    
+                    item.addEventListener('click', function() {
+                        inputElement.value = city.name;
+                        resultsElement.classList.add('hidden');
+                        
+                        if (isOriginDestination) {
+                            updateOriginDestination();
+                        }
+                    });
+                    
+                    resultsElement.appendChild(item);
+                });
+                
+                resultsElement.classList.remove('hidden');
+            });
+            
+            // Hide autocomplete when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!inputElement.contains(e.target) && !resultsElement.contains(e.target)) {
+                    resultsElement.classList.add('hidden');
+                }
+            });
+        }
+
+        // Setup autocomplete for city search
+        setupAutocomplete(
+            document.getElementById('citySearch'), 
+            document.getElementById('autocompleteResults')
+        );
+                
+        // Setup autocomplete for origin and destination
+        setupAutocomplete(
+            document.getElementById('originSearch'), 
+            document.getElementById('originAutocomplete'), 
+            true
+        );
+                
+        setupAutocomplete(
+            document.getElementById('destinationSearch'), 
+            document.getElementById('destinationAutocomplete'), 
+            true
+        );
+
+        // Handle city search selection
+        document.getElementById('citySearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const cityName = this.value.trim();
+                const city = iranCities.find(c => c.name === cityName);
+                
+                if (city) {
+                    // Add marker
+                    const marker = addMarker(city.lat, city.lng, city.name);
+                    
+                    // Add polyline if there are previous markers
+                    if (markers.length > 1) {
+                        const prevMarker = markers[markers.length - 2];
+                        const line = L.polyline([
+                            [prevMarker.getLatLng().lat, prevMarker.getLatLng().lng],
+                            [city.lat, city.lng]
+                        ], {
+                            color: '#3b82f6', 
+                            weight: 4,
+                            dashArray: '10, 5',
+                            className: 'distance-line'
+                        }).addTo(map);
+                        polylines.push(line);
+                    }
+                    
+                    // Center map on the new marker
+                    map.setView([city.lat, city.lng], 8);
+                    
+                    // Clear search input
+                    this.value = '';
+                    document.getElementById('autocompleteResults').classList.add('hidden');
+                    
+                    updatePointsList();
+                }
+            }
+        });
+
+        // Handle map click to add marker with better UX
+        map.on('click', function(e) {
+            // Don't add markers when searching for origin/destination
+            if (document.getElementById('originSearch').value || 
+                document.getElementById('destinationSearch').value) {
+                return;
+            }
+            
+            // Find the nearest city within 15km
+            let nearestCity = null;
+            let minDistance = Infinity;
+            
+            for (const city of iranCities) {
+                const distance = calculateDistance(e.latlng.lat, e.latlng.lng, city.lat, city.lng);
+                if (distance < 15 && distance < minDistance) {
+                    minDistance = distance;
+                    nearestCity = city;
+                }
+            }
+            
+            const cityName = nearestCity ? nearestCity.name : `نقطه ${markers.length + 1}`;
+            const marker = addMarker(e.latlng.lat, e.latlng.lng, cityName);
+            
+            // Add polyline if there are previous markers
+            if (markers.length > 1) {
+                const prevMarker = markers[markers.length - 2];
+                const line = L.polyline([
+                    [prevMarker.getLatLng().lat, prevMarker.getLatLng().lng],
+                    [e.latlng.lat, e.latlng.lng]
+                ], {
+                    color: '#3b82f6', 
+                    weight: 4,
+                    dashArray: '10, 5',
+                    className: 'distance-line'
+                }).addTo(map);
+                polylines.push(line);
+            }
+            
+            updatePointsList();
+        });
+
+        // Clear all button with confirmation
+        document.getElementById('clearAll').addEventListener('click', function() {
+            if (markers.length > 0 || originMarker || destinationMarker) {
+                if (confirm('آیا از پاک کردن تمام نقاط و محاسبات اطمینان دارید؟')) {
+                    // Clear all markers
+                    markers.forEach(marker => map.removeLayer(marker));
+                    markers = [];
+                    
+                    // Clear all polylines
+                    polylines.forEach(line => map.removeLayer(line));
+                    polylines = [];
+                    
+                    // Clear origin/destination
+                    if (originMarker) map.removeLayer(originMarker);
+                    if (destinationMarker) map.removeLayer(destinationMarker);
+                    if (originDestinationPolyline) map.removeLayer(originDestinationPolyline);
+                    
+                    originMarker = null;
+                    destinationMarker = null;
+                    originDestinationPolyline = null;
+                    
+                    document.getElementById('originSearch').value = '';
+                    document.getElementById('destinationSearch').value = '';
+                    document.getElementById('citySearch').value = '';
+                    document.getElementById('originDestinationResults').classList.add('hidden');
+                    
+                    updatePointsList();
+                    
+                    showToast('تمام نقاط و محاسبات پاک شدند');
+                }
+            } else {
+                showToast('نقطه‌ای برای پاک کردن وجود ندارد');
+            }
+        });
+
+        // Toggle lines button
+        document.getElementById('toggleLines').addEventListener('click', function() {
+            showLines = !showLines;
+            
+            if (showLines) {
+                polylines.forEach(line => map.addLayer(line));
+                if (originDestinationPolyline) map.addLayer(originDestinationPolyline);
+                this.innerHTML = '<i class="fas fa-eye-slash ml-1"></i> پنهان کردن خطوط';
+            } else {
+                polylines.forEach(line => map.removeLayer(line));
+                if (originDestinationPolyline) map.removeLayer(originDestinationPolyline);
+                this.innerHTML = '<i class="fas fa-eye ml-1"></i> نمایش خطوط';
+            }
+        });
+
+        // Calculate distance button handler
+        document.getElementById('calculateDistance').addEventListener('click', function() {
+            updateOriginDestination(true);
+        });
+
+        // Handle city confirm button
+        document.getElementById('cityConfirm').addEventListener('click', function() {
+            const cityName = document.getElementById('citySearch').value.trim();
+            const city = iranCities.find(c => c.name === cityName);
+            
+            if (city) {
+                const marker = addMarker(city.lat, city.lng, city.name);
+                
+                // If there's more than one marker, draw a line
+                if (markers.length > 1) {
+                    const prevMarker = markers[markers.length - 2];
+                    const line = L.polyline([
+                        [prevMarker.getLatLng().lat, prevMarker.getLatLng().lng],
+                        [city.lat, city.lng]
+                    ], {
+                        color: '#3b82f6', 
+                        weight: 4,
+                        dashArray: '10, 5',
+                        className: 'distance-line'
+                    }).addTo(map);
+                    polylines.push(line);
+                }
+                
+                map.setView([city.lat, city.lng], 8);
+                document.getElementById('citySearch').value = '';
+                document.getElementById('autocompleteResults').classList.add('hidden');
+                updatePointsList();
+            } else {
+                showToast('شهر وارد شده یافت نشد');
+            }
+        });
+
+        // Initialize
+        updatePointsList();
+        
+        // Add a welcome message
+        setTimeout(() => {
+            showToast('به ابزار محاسبه فاصله بین شهرهای ایران خوش آمدید!');
+        }, 1000);
+    </script>
+</body>
+</html>
